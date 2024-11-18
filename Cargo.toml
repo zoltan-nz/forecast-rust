@@ -7,18 +7,25 @@ rust-version = "1.82"
 [dependencies]
 askama = "0.12.1"
 axum = "0.7.7"
-reqwest = "0.12.9"
+reqwest = { version = "0.12.9", features = ["json"] }
 sea-orm = { version = "1.1.0", features = ["sqlx-sqlite", "runtime-tokio-native-tls", "macros"] }
 serde = "1.0.214"
 serde_json = "1.0.132"
 thiserror = "2.0.1"
-tokio = "1.41.0"
+tokio = { version = "1.41.0", features = ["full"] }
 tower = "0.5.1"
 tower-http = "0.6.1"
 tracing = "0.1.40"
-tracing-subscriber = "0.3.18"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 
 [dev-dependencies]
+pretty_assertions = "1.4.1"
+test-case = "3.3.1"
+insta = "1.41.1"
+ctor = "0.2.8"
+tokio-test = "0.4.4"
+wiremock = "0.6.2"
+tempfile = "3.14.0"
 sea-orm-cli = { version = "1.1.0", features = ["runtime-tokio"] }
 
 [workspace]
@@ -26,3 +33,6 @@ members = [
     ".",
     "migration"
 ]
+
+[profile.dev]
+opt-level = 0

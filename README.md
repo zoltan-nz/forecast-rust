@@ -1,20 +1,168 @@
-# Weather Forecast Web Application
+# Weather Forecast Service
 
-A Rust-based weather forecast web application that provides current weather and 5-day forecasts using the Open-Meteo API.
+## Project Overview
+A Rust-based web service that provides weather forecasts with:
+- City-based weather search
+- Historical search tracking
+- Protected admin statistics
 
-## 1. Project Summary
+## Directory Structure
+```
+src/
+├── api/              # HTTP API handlers
+│   ├── mod.rs
+│   ├── weather.rs    # Weather endpoints
+│   └── admin.rs      # Admin endpoints
+├── services/         # Business logic
+│   ├── mod.rs
+│   ├── weather.rs    # Weather service
+│   └── city.rs       # City tracking service
+├── models/           # Database entities
+│   ├── mod.rs
+│   └── cities.rs     # City model
+├── config/           # Configuration
+│   ├── mod.rs
+│   └── settings.rs   # App settings
+├── errors/           # Error handling
+│   ├── mod.rs
+│   └── api_error.rs  # API error types
+└── main.rs          # Application entry point
 
-We're building a web-based weather forecast application that allows users to search for weather information by city name. The application will have both a user interface and an API backend.
+migrations/          # Database migrations
+templates/          # HTML templates
+tests/             # Integration tests
+```
 
-### Key Features
+## Core Features
 
-- 🌍 City-based weather search
-- 🌡️ Current weather conditions
-- 📅 5-day weather forecast
-- 📊 Search history tracking
-- 🔒 Protected admin statistics
+### 1. Weather Search
+- City name search with geocoding
+- Current weather display
+- 5-day forecast
+- Caching of geocoding results
 
-## 2. Wireframes
+### 2. Admin Features
+- Protected statistics dashboard
+- Recent searches tracking
+- Search frequency analytics
+
+### 3. Technical Features
+- RESTful API
+- Database persistence
+- Error handling
+- Authentication
+- API rate limiting
+- Response caching
+
+## External APIs
+
+### Geocoding API
+- Base URL: `https://geocoding-api.open-meteo.com/v1/search`
+- Query params: `?name={city}&count=1&language=en&format=json`
+- Rate limit: 10,000/day
+
+### Weather API
+- Base URL: `https://api.open-meteo.com/v1/forecast`
+- Query params: `?latitude={lat}&longitude={lon}&hourly=temperature_2m`
+- Rate limit: 10,000/day
+
+### Using GeoCoding API
+
+> [API Documentation](https://open-meteo.com/en/docs/geocoding-api)
+
+Search URL: `https://geocoding-api.open-meteo.com/v1/search`
+
+Query Parameters:
+- `name`
+  String to search for. An empty string or only 1 character will return an empty result. 2 characters will only match exact matching locations. 3 and more characters will perform fuzzy matching. The search string can be a location name or a postal code.
+- `count`, default is `10` - should be set to `1`
+- `format`, default is `json` - we don't need to list it
+- `language`, default is `en` - we don't need to list it
+
+Result:
+```json
+{
+  "results": [
+    {
+      "id": 2950159,
+      "name": "Berlin",
+      "latitude": 52.52437,
+      "longitude": 13.41053,
+      "elevation": 74.0,
+      "feature_code": "PPLC",
+      "country_code": "DE",
+      "admin1_id": 2950157,
+      "admin2_id": 0,
+      "admin3_id": 6547383,
+      "admin4_id": 6547539,
+      "timezone": "Europe/Berlin",
+      "population": 3426354,
+      "postcodes": [
+        "10967",
+        "13347"
+      ],
+      "country_id": 2921044,
+      "country": "Deutschland",
+      "admin1": "Berlin",
+      "admin2": "",
+      "admin3": "Berlin, Stadt",
+      "admin4": "Berlin"
+    },
+    {}
+  ]
+}
+```
+- When the city is not valid
+```json
+{
+}
+```
+
+- we need only `latitude`, `longitude`.
+
+#### Using Weather API
+
+> [API Documentation](https://open-meteo.com/en/docs/forecast-api)
+
+Forecast URL: `https://api.open-meteo.com/v1/forecast`
+
+- default time period is 7 days
+
+Query Parameters:
+- `latitude`, `longitude` (required)
+  Geographical coordinates in decimal degrees
+- `hourly`
+  List of weather variables for current weather. We use:
+    - `temperature_2m`
+- `timezone`
+    - If `auto` is set as a time zone, the coordinates will be automatically resolved to the local time zone.
+
+Result:
+```json
+{
+  "latitude": 43.70455,
+  "longitude": -79.404625,
+  "generationtime_ms": 0.0219345092773438,
+  "utc_offset_seconds": -14400,
+  "timezone": "America/New_York",
+  "timezone_abbreviation": "EDT",
+  "elevation": 175,
+  "hourly_units": {
+    "time": "iso8601",
+    "temperature_2m": "°C"
+  },
+  "hourly": {
+    "time": [
+      "2024-10-26T00:00",
+      "2024-10-26T01:00"
+    ],
+    "temperature_2m": [9.4, 8.8]
+  }
+}
+```
+
+
+## Wireframes
 
 ### a) Home Page (index.html):
 ```
@@ -74,182 +222,94 @@ We're building a web-based weather forecast application that allows users to sea
 +----------------------------------+
 ```
 
-## 3. API Documentation
+## Development Setup
 
-Endpoints
-
-- GET / - Home page with search form
-- GET /weather?city={city} - Weather for specified city
-- GET /stats - Search statistics (requires authentication)
-
-## 4. Todo List
-
-1. Project Setup
-    - [x] Initialize Rust project
-    - [x] Create basic project structure
-
-2. Geo Location Service
-    - [x] Implement FetchLatLong function (TDD)
-    - [x] Add error handling and input validation
-
-3. Weather Service
-    - [x] Implement FetchWeather function (TDD)
-    - [x] Parse and structure weather data (current and 5-day forecast)
-
-4. API Server
-    - [x] Setup Actix Web server
-    - [x] Create /api/weather endpoint
-    - [x] Integrate Geo Location and Weather services
-
-5. Database Integration
-    - [ ] Set up SQLite connection
-    - [ ] Create Cities table migration
-    - [ ] Implement functions to store and retrieve recent searches
-
-6. HTML Templates
-    - [ ] Create index page with search form and autocomplete
-    - [ ] Create weather results page with current weather and 5-day forecast
-    - [ ] Create admin statistics page
-    - [ ] Implement template rendering in API server
-
-7. Authentication
-    - [ ] Implement basic auth for /api/stats endpoint
-    - [ ] Create /api/stats endpoint to show recent searches and total count
-
-8. User Interface
-    - [ ] Implement city search autocomplete functionality
-    - [ ] Style pages with CSS for a better user experience
-
-9. Error Handling and Logging
-    - [ ] Implement consistent error handling across the application
-    - [ ] Add logging for important events and errors
-
-10. Testing
-    - [ ] Unit tests for all main functions
-    - [ ] Integration tests for API endpoints
-
-11. Documentation
-    - [ ] Write API documentation
-    - [ ] Add usage instructions in README.md
-
-## External APIs
-
-- Geocoding API: https://geocoding-api.open-meteo.com/v1/search
-- Weather API: https://api.open-meteo.com/v1/forecast
-
-### Using GeoCoding API
-
-> [API Documentation](https://open-meteo.com/en/docs/geocoding-api)
-
-Search URL: `https://geocoding-api.open-meteo.com/v1/search`
-
-Query Parameters:
-- `name`
-  String to search for. An empty string or only 1 character will return an empty result. 2 characters will only match exact matching locations. 3 and more characters will perform fuzzy matching. The search string can be a location name or a postal code.
-- `count`, default is `10` - should be set to `1`
-- `format`, default is `json` - we don't need to list it
-- `language`, default is `en` - we don't need to list it
-
-Result:
-```json
-{
-  "results": [
-    {
-      "id": 2950159,
-      "name": "Berlin",
-      "latitude": 52.52437,
-      "longitude": 13.41053,
-      "elevation": 74.0,
-      "feature_code": "PPLC",
-      "country_code": "DE",
-      "admin1_id": 2950157,
-      "admin2_id": 0,
-      "admin3_id": 6547383,
-      "admin4_id": 6547539,
-      "timezone": "Europe/Berlin",
-      "population": 3426354,
-      "postcodes": [
-        "10967",
-        "13347"
-      ],
-      "country_id": 2921044,
-      "country": "Deutschland",
-      "admin1": "Berlin",
-      "admin2": "",
-      "admin3": "Berlin, Stadt",
-      "admin4": "Berlin"
-    },
-    {}
-  ]
-}
+### Prerequisites
+```bash
+rustup toolchain install 1.75+
+cargo install sea-orm-cli
 ```
 
-- we need only `latitude`, `longitude`.
-
-## Using Weather API
-
-> [API Documentation](https://open-meteo.com/en/docs/forecast-api)
-
-Forecast URL: `https://api.open-meteo.com/v1/forecast`
-
-- default time period is 7 days
-
-Query Parameters:
-- `latitude`, `longitude` (required)
-  Geographical coordinates in decimal degrees
-- `hourly`
-  List of weather variables for current weather. We use:
-    - `temperature_2m`
-- `timezone`
-    - If `auto` is set as a time zone, the coordinates will be automatically resolved to the local time zone.
-
-Result:
-```json
-{
-  "latitude": 43.70455,
-  "longitude": -79.404625,
-  "generationtime_ms": 0.0219345092773438,
-  "utc_offset_seconds": -14400,
-  "timezone": "America/New_York",
-  "timezone_abbreviation": "EDT",
-  "elevation": 175,
-  "hourly_units": {
-    "time": "iso8601",
-    "temperature_2m": "°C"
-  },
-  "hourly": {
-    "time": [
-      "2024-10-26T00:00",
-      "2024-10-26T01:00"
-    ],
-    "temperature_2m": [9.4, 8.8]
-  }
-}
-```
-
-# Development Setup
-
-## Prerequisites
-
-- Rust 1.82 or higher
-- SQLite 3.47 or higher
-- Docker (optional, for containerized development)
-
-## Project Setup
-
-After cloning the repository, setup the local `.env` file with copying the `.env.example` file.
-
+### Environment Setup
 ```bash
 cp .env.example .env
+# Configure DATABASE_URL and other settings
+```
+```env
+# Database Configuration
+DATABASE_URL=sqlite://weather.db?mode=rwc
+
+# Server Configuration
+PORT=3000
+HOST=127.0.0.1
+
+# Logging
+RUST_LOG=info
+
+# Authentication
+ADMIN_USERNAME=forecast
+ADMIN_PASSWORD=forecast
+
+# Rate Limiting
+RATE_LIMIT_REQUESTS=100
+RATE_LIMIT_DURATION_SECS=3600
+
+# Cache Configuration
+CACHE_TTL_SECS=3600
+GEO_CACHE_TTL_SECS=86400  # 24 hours
 ```
 
-Install dependencies and run the application:
-
+### Database Setup
 ```bash
-cargo check
-cargo build
+cargo run -p migration
+```
+
+### Run Development Server
+```bash
 cargo run
 ```
+
+## Testing
+```bash
+# Run unit tests
+cargo test
+
+# Run integration tests
+cargo test --test '*'
+```
+
+## API Documentation
+
+### Public Endpoints
+`GET /api/weather?city={city}`
+- Returns current weather and forecast
+- Rate limited to 100 requests per hour per IP
+
+### Protected Endpoints
+`GET /api/stats`
+- Requires Basic Auth
+- Returns search statistics
+
+## Error Handling
+| Status Code | Description           |
+|-------------|--------------------|
+| 400         | Invalid request    |
+| 401         | Unauthorized       |
+| 404         | City not found     |
+| 429         | Rate limit exceeded|
+| 500         | Internal error     |
+
+## Design Decisions
+
+### 1. Technology Choices
+- **Axum**: Modern, async web framework
+- **SeaORM**: Type-safe database access
+- **SQLite**: Simple deployment, suitable for moderate load
+
+### 2. Architecture
+- Service layer pattern
+- Repository pattern for data access
+- Error-first design
 
 ## Development Logs
 
@@ -266,16 +326,3 @@ sea-orm-cli migrate init
 sea-orm-cli migrate generate create_cities_table
 ```
 
-- migration file is created in the `migrations` folder
-
-### Project Structure
-
-```
-src/
-├── api/          # API handlers
-├── services/     # Business logic
-├── models/       # Domain models
-├── db/           # Database interactions
-├── templates/    # HTML templates
-└── main.rs       # Application entry point
-```
