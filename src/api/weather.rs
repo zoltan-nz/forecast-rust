@@ -38,7 +38,7 @@ mod tests {
     use axum_test::TestServer;
     use pretty_assertions::assert_eq;
 
-    async fn setup() -> TestServer {
+    fn setup() -> TestServer {
         let app = Router::new().route("/weather", get(fetch));
 
         TestServer::new(app.into_make_service()).unwrap()
@@ -46,7 +46,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_weather() {
-        let server = setup().await;
+        let server = setup();
 
         let response = server
             .get("/weather")
@@ -60,7 +60,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_weather_not_found() {
-        let server = setup().await;
+        let server = setup();
 
         let response = server
             .get("/weather")
@@ -73,7 +73,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_weather_missing_param() {
-        let server = setup().await;
+        let server = setup();
 
         let response = server.get("/weather").await;
 
@@ -93,7 +93,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_weather_empty_city() {
-        let server = setup().await;
+        let server = setup();
 
         let response = server.get("/weather").add_query_param("city", "").await;
 
