@@ -1,4 +1,6 @@
+mod api;
 mod services;
+mod errors;
 
 use axum::{routing::get, Router};
 use sea_orm::DatabaseConnection;
@@ -37,7 +39,10 @@ async fn main() {
 }
 
 fn create_router(db: DatabaseConnection) -> Router {
-    Router::new().route("/", get(health_check)).with_state(db)
+    Router::new()
+        .route("/", get(health_check))
+        .route("/weather", get(api::weather::fetch))
+        .with_state(db)
 }
 
 async fn health_check() -> &'static str {
