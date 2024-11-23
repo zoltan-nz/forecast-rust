@@ -1,6 +1,6 @@
 mod api;
-mod services;
 mod errors;
+mod services;
 
 use axum::{routing::get, Router};
 use sea_orm::DatabaseConnection;

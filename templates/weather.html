@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Weather for {{ city }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Weather for {{ city }}</h1>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Temperature Range</h5>
+            <p class="card-text">
+                <span class="temp-min">{{ min_temp }}°C</span> to
+                <span class="temp-max">{{ max_temp }}°C</span>
+            </p>
+
+            <h5 class="card-title mt-4">Hourly Forecast</h5>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Temperature</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for forecast in hourly_forecasts %}
+                    <tr>
+                        <td>{{ forecast.time }}</td>
+                        <td>{{ forecast.temp }}°C</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="/" class="btn btn-primary">New Search</a>
+    </div>
+</div>
+{% endblock %}
