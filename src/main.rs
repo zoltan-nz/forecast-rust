@@ -1,28 +1,47 @@
 mod api;
 mod errors;
-mod services;
 mod handlers;
+mod services;
 
 use axum::{routing::get, Router};
 use sea_orm::DatabaseConnection;
 use std::net::SocketAddr;
-use tracing::info;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tracing::{info, Level};
+use tracing_subscriber::{
+    fmt::{self},
+    layer::SubscriberExt,
+    util::SubscriberInitExt,
+};
+use chrono::Utc;
 
 #[tokio::main]
 async fn main() {
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::new(
-            std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string()),
+            std::env::var("RUST_LOG").unwrap_or_else(|_| {
+                "forecast_rust=debug,tower_http=debug,axum::rejection=trace".into()
+            }),
         ))
-        .with(tracing_subscriber::fmt::layer())
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_thread_ids(true)
+                .with_thread_names(true)
+                .with_target(true)
+                .with_level(true)
+                .with_file(true)
+                .with_line_number(true),
+        )
         .init();
 
     let db_url =
         std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite://weather.db".to_string());
+
+    info!("Connecting to database at {}", db_url);
     let db = sea_orm::Database::connect(&db_url)
         .await
         .expect("Database connection failed");
+    info!("Database connection established");
+
 
     let app = create_router(db);
 

@@ -1,5 +1,7 @@
 use reqwest::Client;
 use serde::Deserialize;
+use serde_json::json;
+use std::clone;
 use thiserror::Error;
 
 const GEOCODING_API_URL: &str = "https://geocoding-api.open-meteo.com/v1/search";
@@ -28,7 +30,7 @@ pub struct LatLong {
 
 #[derive(Debug, Deserialize)]
 pub struct GeoResponse {
-    pub results: Option<Vec<LatLong>>
+    pub results: Option<Vec<LatLong>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -54,52 +56,67 @@ impl WeatherService {
     }
 
     pub async fn fetch_coordinates(&self, city: &str) -> Result<LatLong, ServiceError> {
+        tracing::debug!("Fetching coordinates for city: {}", city);
+
         if city.trim().is_empty() {
-            return Err(ServiceError::CityNotFound("City name cannot be empty".to_string()));
+            tracing::warn!("Empty city name provided");
+            return Err(ServiceError::CityNotFound(
+                "City name cannot be empty".to_string(),
+            ));
         }
 
-        let url = format!(
-            "{GEOCODING_API_URL}?name={city}&count=1&language=en&format=json"
-        );
+        let url = format!("{GEOCODING_API_URL}?name={city}&count=1&language=en&format=json");
+        tracing::debug!("Geocoding API request: {}", url);
 
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| ServiceError::GeocodingError(e.to_string()))?;
+        let response = self.client.get(&url).send().await.map_err(|e| {
+            tracing::error!("Geocoding API request failed: {}", e);
+            ServiceError::GeocodingError(e.to_string())
+        })?;
 
-        let geo_data: GeoResponse = response
-            .json()
-            .await
-            .map_err(|e| ServiceError::GeocodingError(format!("Failed to parse JSON: {e}")))?;
+        let geo_data: GeoResponse = response.json().await.map_err(|e| {
+            tracing::error!("Failed to parse Geocoding API response: {}", e);
+            ServiceError::GeocodingError(format!("Failed to parse JSON: {e}"))
+        })?;
 
         match geo_data.results {
-            Some(results) if !results.is_empty() => Ok(results[0].clone()),
-            _ => Err(ServiceError::CityNotFound(format!("No coordinates found for {city}"))),
+            Some(results) if !results.is_empty() => {
+                tracing::info!("Found coordinates for {}: {:?}", city, results[0]);
+                Ok(results[0].clone())
+            }
+            _ => {
+                tracing::warn!("No coordinates found for city: {}", city);
+                Err(ServiceError::CityNotFound(format!(
+                    "No coordinates found for {city}"
+                )))
+            }
         }
     }
 
-    pub async fn fetch_weather(
-        &self,
-        coords: &LatLong,
-    ) -> Result<WeatherData, ServiceError> {
+    pub async fn fetch_weather(&self, coords: &LatLong) -> Result<WeatherData, ServiceError> {
+        tracing::debug!(
+            "Fetching weather for coordinates: lat={}, lon={}",
+            coords.latitude,
+            coords.longitude
+        );
+
         let url = format!(
             "{WEATHER_API_URL}?latitude={}&longitude={}&hourly=temperature_2m",
             coords.latitude, coords.longitude
         );
+        tracing::debug!("Weather API request: {}", url);
 
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| ServiceError::WeatherError(e.to_string()))?;
+        let response = self.client.get(&url).send().await.map_err(|e| {
+            tracing::error!("Weather API request failed: {}", e);
+            ServiceError::WeatherError(e.to_string())
+        })?;
 
-        response
-            .json()
-            .await
-            .map_err(|e| ServiceError::WeatherError(e.to_string()))
+        let weather_data = response.json().await.map_err(|e| {
+            tracing::error!("Failed to parse Weather API response: {}", e);
+            ServiceError::WeatherError(e.to_string())
+        })?;
+
+        tracing::info!("Successfully fetched weather data");
+        Ok(weather_data)
     }
 }
 
@@ -109,13 +126,15 @@ mod tests {
     use pretty_assertions::assert_eq;
     use test_case::test_case;
 
-
     #[tokio::test]
     async fn test_fetch_coordinates_london() {
         let service = WeatherService::new();
         let result = service.fetch_coordinates("London").await;
 
-        assert!(result.is_ok(), "Expected Ok result for London, got {result:?}");
+        assert!(
+            result.is_ok(),
+            "Expected Ok result for London, got {result:?}"
+        );
 
         let coords = result.unwrap();
         assert!(
@@ -127,7 +146,7 @@ mod tests {
             (-1.0..1.0).contains(&coords.longitude),
             "London longitude {} should be between -1 and 1",
             coords.longitude
-            );
+        );
 
         println!("London coordinates: {coords:?}");
     }
@@ -147,7 +166,10 @@ mod tests {
         );
 
         let coords = result.unwrap();
-        println!("{} coordinates: {:.4}°N, {:.4}°E", city, coords.latitude, coords.longitude);
+        println!(
+            "{} coordinates: {:.4}°N, {:.4}°E",
+            city, coords.latitude, coords.longitude
+        );
     }
 
     #[tokio::test]
@@ -157,8 +179,10 @@ mod tests {
 
         match result {
             Err(ServiceError::CityNotFound(msg)) => {
-                assert!(msg.contains("ThisCityDoesNotExist123"),
-                        "Error message '{msg}' should contain the city name");
+                assert!(
+                    msg.contains("ThisCityDoesNotExist123"),
+                    "Error message '{msg}' should contain the city name"
+                );
                 println!("Got expected error: {msg}");
             }
             other => panic!("Expected CityNotFound error, got: {other:?}"),
