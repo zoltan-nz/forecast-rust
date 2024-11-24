@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Weather Forecast{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <h1 class="mb-4">Weather Forecast</h1>
+
+            <div class="card">
+                <div class="card-body">
+                    <form action="/weather" method="get" class="needs-validation" novalidate>
+                        <div class="mb-3">
+                            <label for="city" class="form-label">Enter city name</label>
+                            <input type="text"
+                                   class="form-control form-control-lg text-center"
+                                   id="city"
+                                   name="city"
+                                   required
+                                   placeholder="e.g., London"
+                                   autocomplete="off">
+                            <div class="invalid-feedback">
+                                Please enter a city name
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            Get Weather
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block additional_scripts %}
+<script>
+    // Form validation script
+    (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+    })()
+</script>
+{% endblock %}
+{% endblock %}

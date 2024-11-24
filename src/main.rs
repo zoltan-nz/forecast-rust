@@ -1,6 +1,7 @@
 mod api;
 mod errors;
 mod services;
+mod handlers;
 
 use axum::{routing::get, Router};
 use sea_orm::DatabaseConnection;
@@ -10,7 +11,6 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() {
-    // Initialize login
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::new(
             std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string()),
@@ -18,17 +18,14 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    // Create SQLite database connection with SeaOrm
     let db_url =
         std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite://weather.db".to_string());
     let db = sea_orm::Database::connect(&db_url)
         .await
         .expect("Database connection failed");
 
-    // Build the app
     let app = create_router(db);
 
-    // Run it
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     info!("Listening on {}", addr);
@@ -39,12 +36,17 @@ async fn main() {
 }
 
 fn create_router(db: DatabaseConnection) -> Router {
-    Router::new()
-        .route("/", get(health_check))
-        .route("/weather", get(api::weather::fetch))
-        .with_state(db)
-}
+    // API routes
+    let api_router = Router::new().route("/weather", get(api::weather::get_weather));
 
-async fn health_check() -> &'static str {
-    "I'm alive!"
+    // Page routes
+    let page_router = Router::new()
+        .route("/", get(handlers::pages::index))
+        .route("/weather", get(handlers::weather::show));
+
+    // Combine them
+    Router::new()
+        .nest("/api", api_router) // All API routes under /api
+        .merge(page_router) // HTML pages at root level
+        .with_state(db)
 }
