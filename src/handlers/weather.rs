@@ -44,12 +44,21 @@ async fn generate_weather_response(city: &str) -> Result<Html<String>, ServiceEr
     let coords = service.fetch_coordinates(city).await?;
     let weather = service.fetch_weather(&coords).await?;
 
-    let min_temp = weather.hourly.temperature_2m.iter()
+    let min_temp = weather
+        .hourly
+        .temperature_2m
+        .iter()
         .fold(f64::INFINITY, |a, &b| a.min(b));
-    let max_temp = weather.hourly.temperature_2m.iter()
+    let max_temp = weather
+        .hourly
+        .temperature_2m
+        .iter()
         .fold(f64::NEG_INFINITY, |a, &b| a.max(b));
 
-    let hourly_forecasts: Vec<HourlyForecast> = weather.hourly.time.iter()
+    let hourly_forecasts: Vec<HourlyForecast> = weather
+        .hourly
+        .time
+        .iter()
         .zip(weather.hourly.temperature_2m.iter())
         .map(|(time, temp)| HourlyForecast {
             time: format_time(time),
@@ -82,10 +91,7 @@ fn format_time(time: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::{
-        Router,
-        routing::get,
-    };
+    use axum::{routing::get, Router};
     use axum_test::TestServer;
 
     #[tokio::test]

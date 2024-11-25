@@ -4,19 +4,19 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 #[derive(Debug, Deserialize)]
-pub struct WeatherQuery {
+pub struct QueryParams {
     city: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct WeatherResponse {
+pub struct Response {
     city: String,
-    temperature: WeatherTemperature,
+    temperature: Temperature,
     hourly_forecast: Vec<HourlyForecast>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct WeatherTemperature {
+pub struct Temperature {
     min: f64,
     max: f64,
 }
@@ -27,8 +27,8 @@ pub struct HourlyForecast {
     temperature: f64,
 }
 
-pub async fn get_weather(Query(query): Query<WeatherQuery>) -> impl IntoResponse {
-    match fetch_weather_data(&query.city).await {
+pub async fn get(Query(query): Query<QueryParams>) -> impl IntoResponse {
+    match fetch_data(&query.city).await {
         Ok(weather) => (StatusCode::OK, Json(weather)).into_response(),
         Err(err) => {
             let (status, message) = match err {
@@ -40,7 +40,7 @@ pub async fn get_weather(Query(query): Query<WeatherQuery>) -> impl IntoResponse
     }
 }
 
-async fn fetch_weather_data(city: &str) -> Result<WeatherResponse, ServiceError> {
+async fn fetch_data(city: &str) -> Result<Response, ServiceError> {
     let service = WeatherService::new();
 
     let coords = service.fetch_coordinates(city).await?;
@@ -68,9 +68,9 @@ async fn fetch_weather_data(city: &str) -> Result<WeatherResponse, ServiceError>
         })
         .collect();
 
-    Ok(WeatherResponse {
+    Ok(Response {
         city: city.to_string(),
-        temperature: WeatherTemperature {
+        temperature: Temperature {
             min: min_temp,
             max: max_temp,
         },
@@ -81,12 +81,13 @@ async fn fetch_weather_data(city: &str) -> Result<WeatherResponse, ServiceError>
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::api::weather;
     use axum::{routing::get, Router};
     use axum_test::TestServer;
 
     #[tokio::test]
     async fn test_get_weather_api() {
-        let app = Router::new().route("/api/weather", get(get_weather));
+        let app = Router::new().route("/api/weather", get(weather::get));
         let server = TestServer::new(app.into_make_service()).unwrap();
 
         // Test successful case
@@ -96,7 +97,7 @@ mod tests {
             .await;
 
         assert_eq!(response.status_code(), StatusCode::OK);
-        let body: WeatherResponse = response.json();
+        let body: Response = response.json();
         assert_eq!(body.city, "London");
 
         // Test invalid city

@@ -1,7 +1,5 @@
 use reqwest::Client;
 use serde::Deserialize;
-use serde_json::json;
-use std::clone;
 use thiserror::Error;
 
 const GEOCODING_API_URL: &str = "https://geocoding-api.open-meteo.com/v1/search";

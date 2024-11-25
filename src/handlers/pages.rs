@@ -11,10 +11,7 @@ pub async fn index() -> IndexTemplate {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::{
-        Router,
-        routing::get,
-    };
+    use axum::{routing::get, Router};
     use axum_test::TestServer;
 
     #[tokio::test]

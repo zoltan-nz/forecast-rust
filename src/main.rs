@@ -6,13 +6,8 @@ mod services;
 use axum::{routing::get, Router};
 use sea_orm::DatabaseConnection;
 use std::net::SocketAddr;
-use tracing::{info, Level};
-use tracing_subscriber::{
-    fmt::{self},
-    layer::SubscriberExt,
-    util::SubscriberInitExt,
-};
-use chrono::Utc;
+use tracing::info;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() {
@@ -42,7 +37,6 @@ async fn main() {
         .expect("Database connection failed");
     info!("Database connection established");
 
-
     let app = create_router(db);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
@@ -56,7 +50,7 @@ async fn main() {
 
 fn create_router(db: DatabaseConnection) -> Router {
     // API routes
-    let api_router = Router::new().route("/weather", get(api::weather::get_weather));
+    let api_router = Router::new().route("/weather", get(api::weather::get));
 
     // Page routes
     let page_router = Router::new()
