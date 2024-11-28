@@ -326,3 +326,7 @@ sea-orm-cli migrate init
 sea-orm-cli migrate generate create_cities_table
 ```
 
+## Useful libraries and tools
+
+- Speeding up tests: https://nexte.st/
+- Coverage report: https://github.com/taiki-e/cargo-llvm-cov
