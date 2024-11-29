@@ -1,3 +1,4 @@
+use log::{debug, error, info, warn};
 use reqwest::Client;
 use serde::Deserialize;
 use thiserror::Error;
@@ -54,35 +55,35 @@ impl WeatherService {
     }
 
     pub async fn fetch_coordinates(&self, city: &str) -> Result<LatLong, ServiceError> {
-        tracing::debug!("Fetching coordinates for city: {}", city);
+        debug!("Fetching coordinates for city: {}", city);
 
         if city.trim().is_empty() {
-            tracing::warn!("Empty city name provided");
+            warn!("Empty city name provided");
             return Err(ServiceError::CityNotFound(
                 "City name cannot be empty".to_string(),
             ));
         }
 
         let url = format!("{GEOCODING_API_URL}?name={city}&count=1&language=en&format=json");
-        tracing::debug!("Geocoding API request: {}", url);
+        debug!("Geocoding API request: {}", url);
 
         let response = self.client.get(&url).send().await.map_err(|e| {
-            tracing::error!("Geocoding API request failed: {}", e);
+            error!("Geocoding API request failed: {}", e);
             ServiceError::GeocodingError(e.to_string())
         })?;
 
         let geo_data: GeoResponse = response.json().await.map_err(|e| {
-            tracing::error!("Failed to parse Geocoding API response: {}", e);
+            error!("Failed to parse Geocoding API response: {}", e);
             ServiceError::GeocodingError(format!("Failed to parse JSON: {e}"))
         })?;
 
         match geo_data.results {
             Some(results) if !results.is_empty() => {
-                tracing::info!("Found coordinates for {}: {:?}", city, results[0]);
+                info!("Found coordinates for {}: {:?}", city, results[0]);
                 Ok(results[0].clone())
             }
             _ => {
-                tracing::warn!("No coordinates found for city: {}", city);
+                warn!("No coordinates found for city: {}", city);
                 Err(ServiceError::CityNotFound(format!(
                     "No coordinates found for {city}"
                 )))
@@ -91,7 +92,7 @@ impl WeatherService {
     }
 
     pub async fn fetch_weather(&self, coords: &LatLong) -> Result<WeatherData, ServiceError> {
-        tracing::debug!(
+        debug!(
             "Fetching weather for coordinates: lat={}, lon={}",
             coords.latitude,
             coords.longitude
@@ -101,19 +102,19 @@ impl WeatherService {
             "{WEATHER_API_URL}?latitude={}&longitude={}&hourly=temperature_2m",
             coords.latitude, coords.longitude
         );
-        tracing::debug!("Weather API request: {}", url);
+        debug!("Weather API request: {}", url);
 
         let response = self.client.get(&url).send().await.map_err(|e| {
-            tracing::error!("Weather API request failed: {}", e);
+            error!("Weather API request failed: {}", e);
             ServiceError::WeatherError(e.to_string())
         })?;
 
         let weather_data = response.json().await.map_err(|e| {
-            tracing::error!("Failed to parse Weather API response: {}", e);
+            error!("Failed to parse Weather API response: {}", e);
             ServiceError::WeatherError(e.to_string())
         })?;
 
-        tracing::info!("Successfully fetched weather data");
+        info!("Successfully fetched weather data");
         Ok(weather_data)
     }
 }
