@@ -90,7 +90,7 @@ mod tests {
         let app = Router::new().route("/api/weather", get(weather::get));
         let server = TestServer::new(app.into_make_service()).unwrap();
 
-        // Test successful case
+        // Test a successful case
         let response = server
             .get("/api/weather")
             .add_query_param("city", "London")

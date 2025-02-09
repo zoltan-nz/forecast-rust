@@ -1,6 +1,8 @@
 mod api;
+mod entities;
 mod errors;
 mod handlers;
+mod repositories;
 mod services;
 
 use axum::{http::Request, routing::get, Router};
@@ -59,7 +61,7 @@ async fn main() {
 }
 
 fn create_router(db: DatabaseConnection) -> Router {
-    // Create trace layer with custom configuration
+    // Create a trace layer with custom configuration
     let trace_layer = TraceLayer::new_for_http()
         .on_request(|request: &Request<_>, _span: &Span| {
             info!("Request: {} {}", request.method(), request.uri());
@@ -91,7 +93,8 @@ fn create_router(db: DatabaseConnection) -> Router {
     // Page routes
     let page_router = Router::new()
         .route("/", get(handlers::pages::index))
-        .route("/weather", get(handlers::weather::show));
+        .route("/weather", get(handlers::weather::show))
+        .route("/stats", get(handlers::stats::show));
 
     // Combine them
     Router::new()

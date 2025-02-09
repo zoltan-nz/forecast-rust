@@ -23,8 +23,8 @@ pub enum ServiceError {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct LatLong {
-    pub latitude: f64,
-    pub longitude: f64,
+    pub latitude: f32,
+    pub longitude: f32,
 }
 
 #[derive(Debug, Deserialize)]

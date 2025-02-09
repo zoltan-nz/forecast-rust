@@ -9,32 +9,37 @@ askama = { version = "0.12.1", features = ["with-axum"] }
 askama_axum = "0.4.0"
 axum = "0.7.9"
 axum-macros = "0.4.2"
-reqwest = { version = "0.12.9", features = ["json"] }
-sea-orm = { version = "1.1.1", features = ["sqlx-sqlite", "runtime-tokio-native-tls", "macros"] }
-serde = "1.0.215"
-serde_json = "1.0.133"
-thiserror = "2.0.3"
-tokio = { version = "1.41.1", features = ["full"] }
-tower = "0.5.1"
+axum-extra = { version = "0.10.0", features = ["typed-header"] }
+reqwest = { version = "0.12.12", features = ["json"] }
+sea-orm = { version = "1.1.4", features = ["sqlx-sqlite", "runtime-tokio-native-tls", "macros"] }
+serde = "1.0.217"
+serde_json = "1.0.138"
+thiserror = "2.0.11"
+tokio = { version = "1.43.0", features = ["full"] }
+tower = "0.5.2"
 tower-http = { version = "0.6.2", features = ["trace"] }
-log = "0.4.20"
-env_logger = { version = "0.11.5", features = ["auto-color"] }
-hyper = "1.5.1"
-time = { version = "0.3.36", features = ["formatting"] }
-chrono = "0.4.38"
-bytes = "1.9.0"
+log = "0.4.25"
+env_logger = { version = "0.11.6", features = ["auto-color"] }
+hyper = "1.6.0"
+time = { version = "0.3.37", features = ["formatting"] }
+chrono = "0.4.39"
+bytes = "1.10.0"
 tracing = "0.1.41"
+headers = "0.4.0"
+base64 = "0.22.1"
 
 [dev-dependencies]
 pretty_assertions = "1.4.1"
 test-case = "3.3.1"
-insta = "1.41.1"
+insta = "1.42.1"
 ctor = "0.2.9"
 tokio-test = "0.4.4"
 wiremock = "0.6.2"
-tempfile = "3.14.0"
-sea-orm-cli = { version = "1.1.1", features = ["runtime-tokio"] }
-axum-test = "16.4.0"
+tempfile = "3.16.0"
+sea-orm-cli = { version = "1.1.4", features = ["runtime-tokio"] }
+axum-test = "16.4.1"
+sea-orm-migration = "1.1.4"
+migration = { path = "migration" }
 
 [workspace]
 members = [

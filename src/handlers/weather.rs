@@ -1,8 +1,11 @@
+use crate::repositories::CityRepository;
 use crate::services::weather_service::{ServiceError, WeatherService};
 use askama_axum::Template;
-use axum::extract::Query;
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse};
+use log::warn;
+use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -25,8 +28,13 @@ struct HourlyForecast {
     temp: f64,
 }
 
-pub async fn show(Query(query): Query<QueryParams>) -> impl IntoResponse {
-    match generate_weather_response(&query.city).await {
+pub async fn show(
+    State(db): State<DatabaseConnection>,
+    Query(query): Query<QueryParams>,
+) -> impl IntoResponse {
+    let repository = CityRepository::new(db);
+
+    match generate_weather_response(repository, &query.city).await {
         Ok(html) => (StatusCode::OK, html).into_response(),
         Err(err) => {
             let (status, message) = match err {
@@ -38,10 +46,21 @@ pub async fn show(Query(query): Query<QueryParams>) -> impl IntoResponse {
     }
 }
 
-async fn generate_weather_response(city: &str) -> Result<Html<String>, ServiceError> {
+async fn generate_weather_response(
+    repository: CityRepository,
+    city: &str,
+) -> Result<Html<String>, ServiceError> {
     let service = WeatherService::new();
 
     let coords = service.fetch_coordinates(city).await?;
+
+    if let Err(err) = repository
+        .save_search(city.to_string(), &coords, None)
+        .await
+    {
+        warn!("Failed to save search history: {}", err);
+    }
+
     let weather = service.fetch_weather(&coords).await?;
 
     let min_temp = weather
@@ -93,10 +112,26 @@ mod tests {
     use super::*;
     use axum::{routing::get, Router};
     use axum_test::TestServer;
+    use sea_orm::Database;
+    use sea_orm_migration::MigratorTrait;
+    use crate::handlers;
+
+    async fn setup_test_db() -> DatabaseConnection {
+        let db = Database::connect("sqlite::memory:")
+            .await
+            .expect("Failed to create test database");
+
+        migration::Migrator::up(&db, None)
+            .await
+            .expect("Failed to run migrations");
+
+        db
+    }
 
     #[tokio::test]
     async fn test_show_weather_page() {
-        let app = Router::new().route("/weather", get(show));
+        let db = setup_test_db().await;
+        let app = Router::new().route("/weather", get(handlers::weather::show)).with_state(db);
         let server = TestServer::new(app.into_make_service()).unwrap();
 
         let response = server

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Search Statistics{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Recent Searches</h1>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>City</th>
+                        <th>Time</th>
+                        <th>Coordinates</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for search in searches %}
+                    <tr>
+                        <td>{{ search.name }}</td>
+                        <td>{{ search.created_at }}</td>
+                        <td>{{ search.lat }}°N, {{ search.long }}°E</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="/" class="btn btn-primary">Back to Search</a>
+    </div>
+</div>
+{% endblock %}
