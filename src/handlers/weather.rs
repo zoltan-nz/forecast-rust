@@ -110,11 +110,11 @@ fn format_time(time: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::handlers;
     use axum::{routing::get, Router};
     use axum_test::TestServer;
     use sea_orm::Database;
     use sea_orm_migration::MigratorTrait;
-    use crate::handlers;
 
     async fn setup_test_db() -> DatabaseConnection {
         let db = Database::connect("sqlite::memory:")
@@ -131,7 +131,9 @@ mod tests {
     #[tokio::test]
     async fn test_show_weather_page() {
         let db = setup_test_db().await;
-        let app = Router::new().route("/weather", get(handlers::weather::show)).with_state(db);
+        let app = Router::new()
+            .route("/weather", get(handlers::weather::show))
+            .with_state(db);
         let server = TestServer::new(app.into_make_service()).unwrap();
 
         let response = server

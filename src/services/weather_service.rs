@@ -94,8 +94,7 @@ impl WeatherService {
     pub async fn fetch_weather(&self, coords: &LatLong) -> Result<WeatherData, ServiceError> {
         debug!(
             "Fetching weather for coordinates: lat={}, lon={}",
-            coords.latitude,
-            coords.longitude
+            coords.latitude, coords.longitude
         );
 
         let url = format!(
